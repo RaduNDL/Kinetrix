@@ -1,0 +1,51 @@
+﻿# Android / Gradle
+.gradle/
+**/build/
+**/.cxx/
+local.properties
+captures/
+.externalNativeBuild/
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Kotlin
+*.class
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+
+# Secrets and local configuration
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/secrets.json
+**/.env
+**/.env.*
+!.env.example
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# ML model files
+**/*.pt
+**/*.pth
+**/*.onnx
+**/*.safetensors
+
+# Logs
+*.log
+
+# User secrets
+**/secrets/
