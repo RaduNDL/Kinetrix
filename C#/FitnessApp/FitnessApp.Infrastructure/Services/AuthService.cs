@@ -43,6 +43,11 @@ public class AuthService : IAuthService
     {
         var normalizedEmail = NormalizeEmail(request.Email);
 
+        if (Encoding.UTF8.GetByteCount(request.Password) > 72)
+        {
+            throw new InvalidOperationException("Password must not exceed 72 UTF-8 bytes.");
+        }
+
         if (request.DateOfBirth.Date > DateTime.UtcNow.Date)
         {
             throw new InvalidOperationException(
@@ -54,6 +59,11 @@ public class AuthService : IAuthService
 
         if (existingUser is not null)
         {
+            if (!existingUser.IsEmailVerified)
+            {
+                throw new EmailNotVerifiedException();
+            }
+
             throw new InvalidOperationException(
                 "An account with this email already exists. Please sign in.");
         }
@@ -68,7 +78,7 @@ public class AuthService : IAuthService
             DateOfBirth = request.DateOfBirth.Date,
             Gender = request.Gender.Trim(),
             HeightCm = request.HeightCm,
-            IsEmailVerified = true,
+            IsEmailVerified = false,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -85,14 +95,13 @@ public class AuthService : IAuthService
                 "An account with this email already exists. Please sign in.");
         }
 
-        await TrySendWelcomeEmailAsync(user);
+        await SendVerificationCodeAsync(user, DateTime.UtcNow);
 
         return new RegisterResponseDto
         {
             Email = normalizedEmail,
             Message =
-                "Your account was created successfully. " +
-                "A welcome email was sent."
+                "Enter the six-digit code sent to your email to activate your account."
         };
     }
 
@@ -121,7 +130,7 @@ public class AuthService : IAuthService
         return new RegisterResponseDto
         {
             Email = normalizedEmail,
-            Message = "A new verification code was sent. Check your Gmail inbox."
+            Message = "A new verification code was sent. Check your inbox and spam folder."
         };
     }
 
@@ -182,6 +191,11 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(
     LoginRequestDto request)
     {
+        if (Encoding.UTF8.GetByteCount(request.Password) > 72)
+        {
+            throw new UnauthorizedAccessException("Invalid email or password.");
+        }
+
         var normalizedEmail = NormalizeEmail(request.Email);
 
         var user = await _context.Users
@@ -194,6 +208,11 @@ public class AuthService : IAuthService
         {
             throw new UnauthorizedAccessException(
                 "Invalid email or password.");
+        }
+
+        if (!user.IsEmailVerified)
+        {
+            throw new EmailNotVerifiedException();
         }
 
         return CreateAuthResponse(user);
@@ -225,6 +244,8 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "The verification email could not be delivered to user {UserId}.", user.Id);
+            user.EmailVerificationCodeHash = null;
+            user.EmailVerificationExpiresAtUtc = null;
             user.EmailVerificationLastSentAtUtc = null;
             await _context.SaveChangesAsync();
             throw new EmailDeliveryException("Kinetix could not send the verification email. Check the SMTP configuration and try again.", ex);
@@ -303,13 +324,4 @@ public class AuthService : IAuthService
     private static bool IsUniqueViolation(DbUpdateException exception) =>
         exception.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 };
 
-    private static void EnsureGmailAddress(string email)
-    {
-        var separator = email.LastIndexOf('@');
-        var domain = separator >= 0 ? email[(separator + 1)..] : string.Empty;
-        if (domain is not ("gmail.com" or "googlemail.com"))
-        {
-            throw new InvalidOperationException("Please register with a Gmail address. We will send a code to verify that you can access it.");
-        }
-    }
 }

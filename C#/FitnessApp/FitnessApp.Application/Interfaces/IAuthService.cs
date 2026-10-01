@@ -9,4 +9,8 @@ public interface IAuthService
 
     Task<AuthResponseDto> LoginAsync(
         LoginRequestDto request);
+
+    Task<AuthResponseDto> VerifyEmailAsync(EmailVerificationRequestDto request);
+
+    Task<RegisterResponseDto> ResendVerificationAsync(ResendVerificationRequestDto request);
 }

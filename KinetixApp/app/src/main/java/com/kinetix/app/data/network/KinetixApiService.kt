@@ -4,6 +4,8 @@ import com.kinetix.app.data.models.AuthResponse
 import com.kinetix.app.data.models.LoginRequest
 import com.kinetix.app.data.models.RegisterRequest
 import com.kinetix.app.data.models.RegisterResponse
+import com.kinetix.app.data.models.EmailVerificationRequest
+import com.kinetix.app.data.models.ResendVerificationRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -19,4 +21,10 @@ interface KinetixApiService {
     suspend fun login(
         @Body request: LoginRequest
     ): Response<AuthResponse>
+
+    @POST("api/auth/verify-email")
+    suspend fun verifyEmail(@Body request: EmailVerificationRequest): Response<AuthResponse>
+
+    @POST("api/auth/resend-verification")
+    suspend fun resendVerification(@Body request: ResendVerificationRequest): Response<RegisterResponse>
 }

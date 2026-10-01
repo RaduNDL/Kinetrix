@@ -3,4 +3,5 @@
   <Project Path="FitnessApp.Application/FitnessApp.Application.csproj" />
   <Project Path="FitnessApp.Domain/FitnessApp.Domain.csproj" />
   <Project Path="FitnessApp.Infrastructure/FitnessApp.Infrastructure.csproj" />
+  <Project Path="FitnessApp.Tests/FitnessApp.Tests.csproj" />
 </Solution>

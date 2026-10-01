@@ -55,6 +55,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.net.Uri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.kinetix.app.data.models.RegisterRequest
@@ -109,11 +110,12 @@ fun RegisterScreen(
                 dateOfBirth.isNotBlank() &&
                 height.isNotBlank()
 
-    LaunchedEffect(authViewModel.isRegistrationCompleted) {
-        if (authViewModel.isRegistrationCompleted) {
+    LaunchedEffect(authViewModel.verificationEmail) {
+        authViewModel.verificationEmail?.let { pendingEmail ->
+            val notice = authViewModel.errorMessage.orEmpty()
             authViewModel.resetState()
 
-            navController.navigate("login") {
+            navController.navigate("verify-email?email=${Uri.encode(pendingEmail)}&notice=${Uri.encode(notice)}") {
                 popUpTo("register") {
                     inclusive = true
                 }
@@ -252,7 +254,7 @@ fun RegisterScreen(
                     )
 
                     Text(
-                        text = "Use an email address that you can access. We will send a welcome email.",
+                        text = "We will send a six-digit code to verify your email, then a welcome message.",
                         color = KinetixMuted,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(
@@ -748,6 +750,10 @@ private fun validateForm(
 
     if (password.length < 10) {
         return "Your password must contain at least 10 characters."
+    }
+
+    if (password.toByteArray(Charsets.UTF_8).size > 72) {
+        return "Your password must not exceed 72 UTF-8 bytes."
     }
 
     if (password != confirmPassword) {

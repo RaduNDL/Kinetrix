@@ -11,6 +11,7 @@ import com.kinetix.app.ui.screens.ExerciseSelectionScreen
 import com.kinetix.app.ui.screens.HomeScreen
 import com.kinetix.app.ui.screens.LoginScreen
 import com.kinetix.app.ui.screens.RegisterScreen
+import com.kinetix.app.ui.screens.VerifyEmailScreen
 import com.kinetix.app.ui.screens.WorkoutCameraScreen
 import com.kinetix.app.ui.screens.WorkoutSummaryScreen
 
@@ -28,6 +29,20 @@ fun AppNavigation() {
 
         composable("register") {
             RegisterScreen(navController)
+        }
+
+        composable(
+            route = "verify-email?email={email}&notice={notice}",
+            arguments = listOf(
+                navArgument("email") { type = NavType.StringType },
+                navArgument("notice") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { entry ->
+            VerifyEmailScreen(
+                navController,
+                entry.arguments?.getString("email").orEmpty(),
+                entry.arguments?.getString("notice").orEmpty()
+            )
         }
 
         composable("home") {

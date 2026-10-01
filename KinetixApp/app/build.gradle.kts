@@ -1,7 +1,44 @@
+import java.util.Properties
+import java.net.URI
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+}
+
+val localSettings = Properties().apply {
+    val settingsFile = rootProject.file("local.properties")
+    if (settingsFile.isFile) settingsFile.inputStream().use { load(it) }
+}
+val debugBaseUrl = providers.gradleProperty("kinetix.baseUrl")
+    .orElse(providers.environmentVariable("KINETIX_BASE_URL"))
+    .orElse(localSettings.getProperty("kinetix.baseUrl", "http://127.0.0.1:5068/"))
+    .get().trim().trimEnd('/') + "/"
+val releaseBaseUrl = providers.gradleProperty("kinetix.releaseBaseUrl")
+    .orElse(providers.environmentVariable("KINETIX_RELEASE_BASE_URL"))
+    .orElse(localSettings.getProperty("kinetix.releaseBaseUrl", ""))
+    .get().trim()
+val debugUri = URI(debugBaseUrl)
+require(debugUri.scheme in listOf("http", "https") && !debugUri.host.isNullOrBlank()
+    && debugUri.rawQuery == null && debugUri.rawFragment == null && debugUri.rawUserInfo == null) {
+    "kinetix.baseUrl must be an HTTP(S) backend URL."
+}
+
+val validateReleaseBackend = tasks.register("validateReleaseBackend") {
+    inputs.property("baseUrl", releaseBaseUrl)
+    doLast {
+        val endpoint = inputs.properties["baseUrl"].toString()
+        val uri = runCatching { URI(endpoint) }.getOrNull()
+        check(uri?.scheme == "https" && !uri.host.isNullOrBlank()
+            && uri.host != "api.example.com" && uri.rawQuery == null
+            && uri.rawFragment == null && uri.rawUserInfo == null) {
+            "Set kinetix.releaseBaseUrl to your deployed HTTPS backend before building release."
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    dependsOn(validateReleaseBackend)
 }
 
 android {
@@ -26,36 +63,29 @@ android {
         debug {
             isMinifyEnabled = false
 
-            /*
-             * Pentru emulatorul Android Studio:
-             * 10.0.2.2 = calculatorul/laptopul gazda.
-             *
-             * Nu este necesar adb reverse.
-             */
+            // Start-Kinetix.ps1 forwards this port over USB or wireless debugging.
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://10.0.2.2:5068/\""
+                "\"$debugBaseUrl\""
             )
         }
 
         release {
             isMinifyEnabled = false
 
-            /*
-             * Înlocuiește adresa înainte de un build release real.
-             */
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"https://api.example.com/\""
+                "\"${releaseBaseUrl.trimEnd('/')}/\""
             )
 
             proguardFiles(
                 getDefaultProguardFile(
                     "proguard-android-optimize.txt"
-                ),
-                "proguard-rules.pro"
+                )
             )
         }
     }

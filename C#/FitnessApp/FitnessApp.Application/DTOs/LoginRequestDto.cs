@@ -1,7 +1,12 @@
-﻿namespace FitnessApp.Application.DTOs;
+using System.ComponentModel.DataAnnotations;
+
+namespace FitnessApp.Application.DTOs;
 
 public class LoginRequestDto
 {
+    [Required, EmailAddress, StringLength(254)]
     public string Email { get; set; } = string.Empty;
+
+    [Required, MaxLength(72)]
     public string Password { get; set; } = string.Empty;
 }

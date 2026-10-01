@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import android.net.Uri
 import com.kinetix.app.data.models.LoginRequest
 import com.kinetix.app.ui.components.AuthBackground
 import com.kinetix.app.ui.components.AuthField
@@ -58,6 +59,16 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authViewModel.verificationEmail) {
+        authViewModel.verificationEmail?.let { pendingEmail ->
+            val notice = authViewModel.errorMessage.orEmpty()
+            authViewModel.resetState()
+            navController.navigate("verify-email?email=${Uri.encode(pendingEmail)}&notice=${Uri.encode(notice)}") {
+                launchSingleTop = true
+            }
+        }
+    }
 
     LaunchedEffect(authViewModel.isSuccess) {
         if (authViewModel.isSuccess) {
@@ -106,7 +117,7 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
                     AuthField(
                         value = email,
                         onValueChange = { email = it; authViewModel.resetState() },
-                        label = "Gmail address",
+                        label = "Email address",
                         leadingIcon = Icons.Filled.Email,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )

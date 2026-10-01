@@ -9,6 +9,7 @@ import com.kinetix.app.data.models.AuthResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.io.IOException
 
 private val Context.authDataStore by preferencesDataStore(
@@ -91,9 +92,7 @@ class UserPreferences(
     }
 
     suspend fun getToken(): String? {
-        var token: String? = null
-
-        context.authDataStore.data
+        return context.authDataStore.data
             .catch { exception ->
                 if (exception is IOException) {
                     emit(
@@ -107,10 +106,6 @@ class UserPreferences(
             .map { preferences ->
                 preferences[Keys.token]
             }
-            .collect { storedToken ->
-                token = storedToken
-            }
-
-        return token
+            .first()
     }
 }

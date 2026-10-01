@@ -110,22 +110,32 @@ public sealed class EmailService : IEmailService
         }.ToMessageBody();
 
         using var smtpClient = new SmtpClient();
+        using var deliveryTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
 
         smtpClient.Timeout = 30_000;
 
         await smtpClient.ConnectAsync(
             server,
             port,
-            SecureSocketOptions.StartTls);
+            SecureSocketOptions.StartTls,
+            deliveryTimeout.Token);
 
         await smtpClient.AuthenticateAsync(
             username,
-            normalizedPassword);
+            normalizedPassword,
+            deliveryTimeout.Token);
 
-        await smtpClient.SendAsync(message);
+        await smtpClient.SendAsync(message, deliveryTimeout.Token);
 
-        await smtpClient.DisconnectAsync(
-            true);
+        // The SMTP server has accepted the message. A disconnect failure must not
+        // invalidate a verification code that was already delivered.
+        try
+        {
+            await smtpClient.DisconnectAsync(true, deliveryTimeout.Token);
+        }
+        catch (Exception exception) when (exception is IOException or OperationCanceledException or SmtpProtocolException)
+        {
+        }
     }
 
     private string GetRequiredSetting(string key)
@@ -136,7 +146,7 @@ public sealed class EmailService : IEmailService
         {
             throw new InvalidOperationException(
                 $"Missing configuration value: {key}. " +
-                "Configure it with .NET User Secrets.");
+                "Configure it in Docker .env or .NET User Secrets.");
         }
 
         return value.Trim();

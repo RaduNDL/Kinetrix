@@ -8,7 +8,7 @@ COPY ["FitnessApp.Application/FitnessApp.Application.csproj", "FitnessApp.Applic
 COPY ["FitnessApp.Domain/FitnessApp.Domain.csproj", "FitnessApp.Domain/"]
 COPY ["FitnessApp.Infrastructure/FitnessApp.Infrastructure.csproj", "FitnessApp.Infrastructure/"]
 
-RUN dotnet restore "FitnessApp.slnx"
+RUN dotnet restore "FitnessApp.API/FitnessApp.API.csproj"
 
 COPY . .
 
@@ -17,6 +17,9 @@ WORKDIR "/src/FitnessApp.API"
 RUN dotnet publish "FitnessApp.API.csproj" --configuration Release --output /app/publish --no-restore /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
