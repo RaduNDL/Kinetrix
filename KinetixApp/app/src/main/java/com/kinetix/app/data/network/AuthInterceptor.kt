@@ -10,16 +10,19 @@ class AuthInterceptor : Interceptor {
         chain: Interceptor.Chain
     ): Response {
         val originalRequest = chain.request()
-        val token = AuthSession.current?.token
+        val currentToken = AuthSession.current?.token
 
         val requestBuilder = originalRequest
             .newBuilder()
-            .header("Accept", "application/json")
+            .header(
+                "Accept",
+                "application/json"
+            )
 
-        if (!token.isNullOrBlank()) {
+        if (!currentToken.isNullOrBlank()) {
             requestBuilder.header(
                 "Authorization",
-                "Bearer $token"
+                "Bearer $currentToken"
             )
         }
 

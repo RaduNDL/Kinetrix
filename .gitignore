@@ -49,3 +49,26 @@ env/
 
 # User secrets
 **/secrets/
+
+# .NET / Visual Studio
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/*.user
+**/*.suo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Android / Gradle
+**/.gradle/
+**/build/
+**/local.properties
+
+# IDE and generated files
+*.iml
+.idea/
+.vscode/

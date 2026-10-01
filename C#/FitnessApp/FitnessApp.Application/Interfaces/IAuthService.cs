@@ -4,8 +4,9 @@ namespace FitnessApp.Application.Interfaces;
 
 public interface IAuthService
 {
-    Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request);
-    Task<AuthResponseDto> VerifyEmailAsync(EmailVerificationRequestDto request);
-    Task<RegisterResponseDto> ResendVerificationAsync(ResendVerificationRequestDto request);
-    Task<AuthResponseDto> LoginAsync(LoginRequestDto request);
+    Task<RegisterResponseDto> RegisterAsync(
+        RegisterRequestDto request);
+
+    Task<AuthResponseDto> LoginAsync(
+        LoginRequestDto request);
 }

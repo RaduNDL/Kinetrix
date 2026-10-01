@@ -8,7 +8,9 @@ object AuthSession {
     var current: AuthResponse? = null
         private set
 
-    fun start(response: AuthResponse) {
+    fun start(
+        response: AuthResponse
+    ) {
         current = response
     }
 

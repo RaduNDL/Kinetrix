@@ -11,7 +11,6 @@ import com.kinetix.app.ui.screens.ExerciseSelectionScreen
 import com.kinetix.app.ui.screens.HomeScreen
 import com.kinetix.app.ui.screens.LoginScreen
 import com.kinetix.app.ui.screens.RegisterScreen
-import com.kinetix.app.ui.screens.VerifyEmailScreen
 import com.kinetix.app.ui.screens.WorkoutCameraScreen
 import com.kinetix.app.ui.screens.WorkoutSummaryScreen
 
@@ -31,25 +30,6 @@ fun AppNavigation() {
             RegisterScreen(navController)
         }
 
-        composable(
-            route = "verify/{email}",
-            arguments = listOf(
-                navArgument("email") {
-                    type = NavType.StringType
-                }
-            )
-        ) { backStackEntry ->
-            val encodedEmail =
-                backStackEntry.arguments
-                    ?.getString("email")
-                    .orEmpty()
-
-            VerifyEmailScreen(
-                navController = navController,
-                email = Uri.decode(encodedEmail)
-            )
-        }
-
         composable("home") {
             HomeScreen(navController)
         }
@@ -66,10 +46,14 @@ fun AppNavigation() {
                 }
             )
         ) { backStackEntry ->
-            val exerciseName =
+            val encodedExerciseName =
                 backStackEntry.arguments
                     ?.getString("exerciseName")
                     .orEmpty()
+
+            val exerciseName = Uri.decode(
+                encodedExerciseName
+            )
 
             WorkoutCameraScreen(
                 navController = navController,

@@ -1,12 +1,11 @@
 package com.kinetix.app.data.repository
 
 import com.kinetix.app.data.models.AuthResponse
-import com.kinetix.app.data.models.EmailVerificationRequest
 import com.kinetix.app.data.models.LoginRequest
 import com.kinetix.app.data.models.RegisterRequest
 import com.kinetix.app.data.models.RegisterResponse
-import com.kinetix.app.data.models.ResendVerificationRequest
 import com.kinetix.app.data.network.KinetixApiService
+import retrofit2.Response
 
 class AuthRepository(
     private val apiService: KinetixApiService
@@ -20,22 +19,6 @@ class AuthRepository(
         }
     }
 
-    suspend fun verifyEmail(
-        request: EmailVerificationRequest
-    ): Result<AuthResponse> {
-        return executeRequest {
-            apiService.verifyEmail(request)
-        }
-    }
-
-    suspend fun resendVerification(
-        request: ResendVerificationRequest
-    ): Result<RegisterResponse> {
-        return executeRequest {
-            apiService.resendVerification(request)
-        }
-    }
-
     suspend fun login(
         request: LoginRequest
     ): Result<AuthResponse> {
@@ -45,16 +28,16 @@ class AuthRepository(
     }
 
     private suspend fun <T> executeRequest(
-        request: suspend () -> retrofit2.Response<T>
+        request: suspend () -> Response<T>
     ): Result<T> {
         return try {
             val response = request()
 
             if (response.isSuccessful) {
-                val body = response.body()
+                val responseBody = response.body()
 
-                if (body != null) {
-                    Result.success(body)
+                if (responseBody != null) {
+                    Result.success(responseBody)
                 } else {
                     Result.failure(
                         IllegalStateException(
@@ -63,11 +46,11 @@ class AuthRepository(
                     )
                 }
             } else {
-                val errorMessage =
-                    response.errorBody()
-                        ?.string()
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "Request failed with HTTP ${response.code()}."
+                val errorMessage = response
+                    .errorBody()
+                    ?.string()
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Request failed with HTTP ${response.code()}."
 
                 Result.failure(
                     IllegalStateException(errorMessage)

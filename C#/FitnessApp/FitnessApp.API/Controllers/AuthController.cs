@@ -17,66 +17,40 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+    public async Task<IActionResult> Register(
+        [FromBody] RegisterRequestDto request)
     {
         try
         {
             var result = await _authService.RegisterAsync(request);
-            return Ok(result);
-        }
-        catch (EmailDeliveryException ex)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
 
-    [HttpPost("verify-email")]
-    public async Task<IActionResult> VerifyEmail([FromBody] EmailVerificationRequestDto request)
-    {
-        try
-        {
-            var result = await _authService.VerifyEmailAsync(request);
             return Ok(result);
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException exception)
         {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    [HttpPost("resend-code")]
-    public async Task<IActionResult> ResendCode([FromBody] ResendVerificationRequestDto request)
-    {
-        try
-        {
-            var result = await _authService.ResendVerificationAsync(request);
-            return Ok(result);
-        }
-        catch (EmailDeliveryException ex)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new
+            {
+                message = exception.Message
+            });
         }
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
+    public async Task<IActionResult> Login(
+        [FromBody] LoginRequestDto request)
     {
         try
         {
             var result = await _authService.LoginAsync(request);
+
             return Ok(result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException exception)
         {
-            return Unauthorized(new { message = ex.Message });
+            return Unauthorized(new
+            {
+                message = exception.Message
+            });
         }
     }
 }

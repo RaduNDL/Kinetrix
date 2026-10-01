@@ -1,6 +1,5 @@
 package com.kinetix.app.ui.screens
 
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -110,16 +109,17 @@ fun RegisterScreen(
                 dateOfBirth.isNotBlank() &&
                 height.isNotBlank()
 
-    LaunchedEffect(authViewModel.isRegistrationSubmitted) {
-        if (authViewModel.isRegistrationSubmitted) {
-            val destinationEmail =
-                authViewModel.verificationEmail ?: email.trim()
-
+    LaunchedEffect(authViewModel.isRegistrationCompleted) {
+        if (authViewModel.isRegistrationCompleted) {
             authViewModel.resetState()
 
-            navController.navigate(
-                "verify/${Uri.encode(destinationEmail)}"
-            )
+            navController.navigate("login") {
+                popUpTo("register") {
+                    inclusive = true
+                }
+
+                launchSingleTop = true
+            }
         }
     }
 
@@ -137,17 +137,21 @@ fun RegisterScreen(
         ) {
             KinetixBrand()
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
 
             Text(
-                text = "STEP 1 OF 2",
+                text = "CREATE YOUR ACCOUNT",
                 color = MaterialTheme.colorScheme.secondary,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
             )
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(
+                modifier = Modifier.height(5.dp)
+            )
 
             Text(
                 text = "Create your profile",
@@ -156,7 +160,9 @@ fun RegisterScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(
+                modifier = Modifier.height(5.dp)
+            )
 
             Text(
                 text = "Complete your details so we can personalize your training experience.",
@@ -164,7 +170,9 @@ fun RegisterScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -188,7 +196,9 @@ fun RegisterScreen(
                         "Your information is used only to create and personalize your account."
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(
+                        modifier = Modifier.height(16.dp)
+                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -233,7 +243,7 @@ fun RegisterScreen(
                             email = it
                             clearMessages()
                         },
-                        label = "Gmail address",
+                        label = "Email address",
                         leadingIcon = Icons.Filled.Email,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
@@ -242,7 +252,7 @@ fun RegisterScreen(
                     )
 
                     Text(
-                        text = "Use an inbox you can access. We will send a verification code here.",
+                        text = "Use an email address that you can access. We will send a welcome email.",
                         color = KinetixMuted,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(
@@ -482,32 +492,51 @@ fun RegisterScreen(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(
+                        modifier = Modifier.height(10.dp)
+                    )
 
                     formError?.let { message ->
                         AuthMessage(
-                            message,
+                            text = message,
                             isError = true
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
                     }
 
                     authViewModel.errorMessage?.let { message ->
                         AuthMessage(
-                            message,
+                            text = message,
                             isError = true
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    authViewModel.infoMessage?.let { message ->
+                        AuthMessage(
+                            text = message,
+                            isError = false
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+                    }
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
 
                     AuthPrimaryButton(
-                        "Send verification code",
-                        authViewModel.isLoading,
-                        fieldsComplete
+                        text = "Create account",
+                        loading = authViewModel.isLoading,
+                        enabled = fieldsComplete
                     ) {
                         val validationError = validateForm(
                             firstName = firstName,
@@ -528,7 +557,9 @@ fun RegisterScreen(
 
                             authViewModel.register(
                                 RegisterRequest(
-                                    email = email.trim().lowercase(),
+                                    email = email
+                                        .trim()
+                                        .lowercase(),
                                     password = password,
                                     firstName = firstName.trim(),
                                     lastName = lastName.trim(),
@@ -540,7 +571,9 @@ fun RegisterScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(
+                        modifier = Modifier.height(18.dp)
+                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -614,6 +647,7 @@ private fun DateOfBirthPickerDialog(
                 utcTimeMillis: Long
             ): Boolean {
                 val selectedDate = utcTimeMillis.toLocalDateUtc()
+
                 return !selectedDate.isAfter(today)
             }
 
@@ -710,16 +744,6 @@ private fun validateForm(
             .matches()
     ) {
         return "Enter a valid email address."
-    }
-
-    val emailDomain = normalizedEmail
-        .substringAfterLast('@', "")
-
-    if (
-        emailDomain != "gmail.com" &&
-        emailDomain != "googlemail.com"
-    ) {
-        return "Use a Gmail address that you can access."
     }
 
     if (password.length < 10) {

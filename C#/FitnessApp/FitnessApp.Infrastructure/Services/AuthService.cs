@@ -38,58 +38,64 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
+    public async Task<RegisterResponseDto> RegisterAsync(
+     RegisterRequestDto request)
     {
         var normalizedEmail = NormalizeEmail(request.Email);
-        EnsureGmailAddress(normalizedEmail);
 
         if (request.DateOfBirth.Date > DateTime.UtcNow.Date)
         {
-            throw new InvalidOperationException("Date of birth cannot be in the future.");
+            throw new InvalidOperationException(
+                "Date of birth cannot be in the future.");
         }
 
-        var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == normalizedEmail);
-        if (user?.IsEmailVerified == true)
+        var existingUser = await _context.Users
+            .SingleOrDefaultAsync(user => user.Email == normalizedEmail);
+
+        if (existingUser is not null)
         {
-            throw new InvalidOperationException("An account with this email already exists. Please sign in.");
+            throw new InvalidOperationException(
+                "An account with this email already exists. Please sign in.");
         }
 
-        var now = DateTime.UtcNow;
-        if (user?.EmailVerificationLastSentAtUtc is DateTime lastSentAt && now - lastSentAt < ResendCooldown)
+        var user = new User
         {
-            throw new InvalidOperationException("A verification code was just sent. Wait one minute before trying again.");
-        }
+            Email = normalizedEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(
+                request.Password),
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            DateOfBirth = request.DateOfBirth.Date,
+            Gender = request.Gender.Trim(),
+            HeightCm = request.HeightCm,
+            IsEmailVerified = true,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        var isNewUser = user is null;
-        if (user is null)
-        {
-            user = new User { Email = normalizedEmail, IsEmailVerified = false };
-            _context.Users.Add(user);
-        }
-
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-        user.FirstName = request.FirstName.Trim();
-        user.LastName = request.LastName.Trim();
-        user.DateOfBirth = request.DateOfBirth.Date;
-        user.Gender = request.Gender.Trim();
-        user.HeightCm = request.HeightCm;
-        user.IsEmailVerified = false;
+        _context.Users.Add(user);
 
         try
         {
-            await SendVerificationCodeAsync(user, now);
+            await _context.SaveChangesAsync();
         }
-        catch (DbUpdateException ex) when (isNewUser && IsUniqueViolation(ex))
+        catch (DbUpdateException exception)
+            when (IsUniqueViolation(exception))
         {
-            throw new InvalidOperationException("An account with this email already exists. Please sign in.");
+            throw new InvalidOperationException(
+                "An account with this email already exists. Please sign in.");
         }
+
+        await TrySendWelcomeEmailAsync(user);
 
         return new RegisterResponseDto
         {
             Email = normalizedEmail,
-            Message = "Check your Gmail inbox for the 6-digit verification code."
+            Message =
+                "Your account was created successfully. " +
+                "A welcome email was sent."
         };
     }
+
 
     public async Task<RegisterResponseDto> ResendVerificationAsync(ResendVerificationRequestDto request)
     {
@@ -173,24 +179,25 @@ public class AuthService : IAuthService
         return CreateAuthResponse(user);
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
+    public async Task<AuthResponseDto> LoginAsync(
+    LoginRequestDto request)
     {
         var normalizedEmail = NormalizeEmail(request.Email);
-        var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == normalizedEmail);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-        {
-            throw new UnauthorizedAccessException("Invalid email or password.");
-        }
+        var user = await _context.Users
+            .SingleOrDefaultAsync(item => item.Email == normalizedEmail);
 
-        if (!user.IsEmailVerified)
+        if (user is null ||
+            !BCrypt.Net.BCrypt.Verify(
+                request.Password,
+                user.PasswordHash))
         {
-            throw new UnauthorizedAccessException("Verify your email address before signing in.");
+            throw new UnauthorizedAccessException(
+                "Invalid email or password.");
         }
 
         return CreateAuthResponse(user);
     }
-
     private async Task SendVerificationCodeAsync(User user, DateTime now)
     {
         var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");

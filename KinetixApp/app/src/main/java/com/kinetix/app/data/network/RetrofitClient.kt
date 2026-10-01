@@ -18,7 +18,7 @@ object RetrofitClient {
             }
         }
 
-    private val okHttpClient =
+    private val httpClient =
         OkHttpClient.Builder()
             .connectTimeout(
                 15,
@@ -39,7 +39,7 @@ object RetrofitClient {
     val apiService: KinetixApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BuildConfig.BASE_URL)
-            .client(okHttpClient)
+            .client(httpClient)
             .addConverterFactory(
                 GsonConverterFactory.create()
             )
